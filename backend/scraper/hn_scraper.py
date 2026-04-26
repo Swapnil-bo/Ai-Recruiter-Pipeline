@@ -41,7 +41,6 @@ class HNScraper(BaseScraper):
                 if not text:
                     continue
 
-                # Keyword filter
                 if keywords_lower and not any(kw in text.lower() for kw in keywords_lower):
                     continue
 
@@ -67,6 +66,7 @@ class HNScraper(BaseScraper):
                     "query": "Ask HN: Who is hiring?",
                     "tags": "story,ask_hn",
                     "hitsPerPage": 5,
+                    "numericFilters": "created_at_i>1700000000",  # post-2023 only
                 },
             )
             hits = data.get("hits", [])
@@ -103,28 +103,18 @@ class HNScraper(BaseScraper):
             return None
 
         clean = self.clean_text(raw_text)
-        if len(clean) < 50:                          # too short to be a real post
+        if len(clean) < 50:
             return None
 
         lines = [l.strip() for l in clean.split(". ") if l.strip()]
         first_line = lines[0] if lines else clean[:120]
 
-        # Extract title and company from first line
         title, company = self._extract_title_company(first_line)
-
-        # Extract location
         location = self._extract_location(clean)
-
-        # Extract salary
         salary = self._extract_salary(clean)
-
-        # Build description — full text truncated
         description = self.truncate(clean)
-
-        # Extract tags from known keywords
         tags = self._extract_tags(clean)
 
-        # Posted date from comment timestamp
         created_at = comment.get("created_at")
         posted_at = None
         if created_at:
@@ -159,20 +149,17 @@ class HNScraper(BaseScraper):
         HN posts often start with: Company | Role | ...
         or: Role at Company
         """
-        # Pattern: Company | Role
         if "|" in first_line:
             parts = [p.strip() for p in first_line.split("|")]
             company = parts[0] if parts[0] else "Unknown"
             title = parts[1] if len(parts) > 1 else "Software Engineer"
             return title[:100], company[:100]
 
-        # Pattern: Role at Company
         match = re.search(r"^(.+?)\s+at\s+(.+?)[\.,|]", first_line, re.IGNORECASE)
         if match:
             return match.group(1).strip()[:100], match.group(2).strip()[:100]
 
-        # Fallback
-        return first_line[:80] or "Software Engineer", "Unknown"
+        return (first_line[:80] or "Software Engineer", "Unknown")
 
     def _extract_location(self, text: str) -> str:
         """Extract location hints from job text."""
@@ -181,20 +168,23 @@ class HNScraper(BaseScraper):
             if "onsite" in text_lower or "on-site" in text_lower:
                 return "Remote / Onsite"
             return "Remote"
-        for pattern in [
-            r"\b(san francisco|new york|london|berlin|bangalore|mumbai|delhi|toronto|singapore)\b"
-        ]:
-            match = re.search(pattern, text_lower)
-            if match:
-                return match.group(1).title()
+
+        city_pattern = (
+            r"\b(san francisco|new york|london|berlin|bangalore|mumbai"
+            r"|delhi|toronto|singapore|hyderabad|pune|chennai)\b"
+        )
+        match = re.search(city_pattern, text_lower)
+        if match:
+            return match.group(1).title()
+
         return "Location not specified"
 
     def _extract_salary(self, text: str) -> str | None:
         """Extract salary range if mentioned."""
         patterns = [
-            r"\$[\d,]+\s*[-–]\s*\$[\d,]+",          # $100,000 - $150,000
-            r"\$[\d,]+[kK]\s*[-–]\s*\$?[\d,]+[kK]", # $100k - $150k
-            r"[\d,]+\s*[-–]\s*[\d,]+\s*USD",         # 100,000 - 150,000 USD
+            r"\$[\d,]+\s*[-–]\s*\$[\d,]+",
+            r"\$[\d,]+[kK]\s*[-–]\s*\$?[\d,]+[kK]",
+            r"[\d,]+\s*[-–]\s*[\d,]+\s*USD",
         ]
         for pattern in patterns:
             match = re.search(pattern, text)
