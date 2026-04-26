@@ -37,8 +37,9 @@ class AdzunaScraper(BaseScraper):
 
         query = " ".join(keywords)
         jobs: list[Job] = []
+        seen_ids: set[str] = set()
         page = 1
-        results_per_page = min(self.max_jobs, 50)   # Adzuna max is 50 per page
+        results_per_page = min(self.max_jobs, 50)
 
         while len(jobs) < self.max_jobs:
             try:
@@ -49,8 +50,7 @@ class AdzunaScraper(BaseScraper):
                         "app_key": self.app_key,
                         "what": query,
                         "results_per_page": results_per_page,
-                        "content-type": "application/json",
-                        "sort_by": "date",              # freshest first
+                        "sort_by": "date",
                     },
                 )
             except Exception as e:
@@ -67,13 +67,13 @@ class AdzunaScraper(BaseScraper):
                     break
                 try:
                     job = self._parse_job(item)
-                    if job:
+                    if job and job.id not in seen_ids:
+                        seen_ids.add(job.id)
                         jobs.append(job)
                 except Exception as e:
                     logger.warning(f"[adzuna] Skipped job {item.get('id')}: {e}")
                     continue
 
-            # If fewer results than requested — no more pages
             if len(results) < results_per_page:
                 break
 
@@ -96,12 +96,14 @@ class AdzunaScraper(BaseScraper):
         if not title:
             return None
 
-        # Company
+        url = item.get("redirect_url", "")
+        if not url:
+            return None
+
         company = (
             item.get("company", {}).get("display_name", "Unknown").strip()
         )
 
-        # Location
         location_data = item.get("location", {})
         location_parts = location_data.get("area", [])
         location = (
@@ -109,20 +111,16 @@ class AdzunaScraper(BaseScraper):
             else location_data.get("display_name", "Not specified")
         )
 
-        # Description
         description = self.clean_text(item.get("description", ""))
         description = self.truncate(description)
         if not description:
             return None
 
-        # Salary
         salary = self._parse_salary(item)
 
-        # Category tags
         category = item.get("category", {}).get("label", "")
         tags = [t.strip().lower() for t in category.split("/")] if category else []
 
-        # Posted date
         posted_at = None
         created = item.get("created")
         if created:
@@ -139,7 +137,7 @@ class AdzunaScraper(BaseScraper):
             company=company,
             location=location,
             description=description,
-            url=item.get("redirect_url", ""),
+            url=url,
             source=self.source_name,
             salary=salary,
             tags=tags[:10],
@@ -150,11 +148,12 @@ class AdzunaScraper(BaseScraper):
         """Build salary string from Adzuna min/max fields."""
         salary_min = item.get("salary_min")
         salary_max = item.get("salary_max")
+        symbol = "₹" if self.country == "in" else "$"
 
         if salary_min and salary_max:
-            return f"${int(salary_min):,} - ${int(salary_max):,}"
+            return f"{symbol}{int(salary_min):,} - {symbol}{int(salary_max):,}"
         elif salary_min:
-            return f"${int(salary_min):,}+"
+            return f"{symbol}{int(salary_min):,}+"
         elif salary_max:
-            return f"Up to ${int(salary_max):,}"
+            return f"Up to {symbol}{int(salary_max):,}"
         return None
