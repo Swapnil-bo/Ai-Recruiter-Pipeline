@@ -19,16 +19,13 @@ class RemoteOKScraper(BaseScraper):
 
     async def scrape(self, keywords: list[str]) -> list[Job]:
         """
-        Fetch all jobs from RemoteOK and filter by keywords.
-        RemoteOK API doesn't support query params — we filter client-side.
+        Fetch all jobs from RemoteOK and filter by keywords client-side.
+        RemoteOK API does not support query params for filtering.
         """
         logger.info(f"[remoteok] Scraping with keywords: {keywords}")
 
         try:
-            raw: list = await self._get_json(
-                REMOTEOK_API_URL,
-                params={"remote": "true"},
-            )
+            raw: list = await self._get_json(REMOTEOK_API_URL)
         except Exception as e:
             logger.error(f"[remoteok] Failed to fetch API: {e}")
             return []
@@ -42,9 +39,7 @@ class RemoteOKScraper(BaseScraper):
         for item in jobs_raw:
             if len(jobs) >= self.max_jobs:
                 break
-
             try:
-                # Keyword filter — match against title, tags, description
                 searchable = " ".join([
                     item.get("position", ""),
                     item.get("company", ""),
@@ -99,15 +94,17 @@ class RemoteOKScraper(BaseScraper):
             except Exception:
                 pass
 
+        url = item.get("url") or f"https://remoteok.com/remote-jobs/{item.get('id')}"
+
         return Job(
             id=job_id,
             title=title,
             company=company,
             location="Remote",
             description=description,
-            url=str(item.get("url", f"https://remoteok.com/remote-jobs/{item.get('id')}")),
+            url=url,
             source=self.source_name,
             salary=salary,
-            tags=item.get("tags", [])[:10],       # cap at 10 tags
+            tags=item.get("tags", [])[:10],
             posted_at=posted_at,
         )
