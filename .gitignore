@@ -19,9 +19,10 @@ venv/
 env/
 .venv/
 
-# PyMuPDF / uploads
-data/uploads/
-*.pdf
+# Uploads & generated data
+data/uploads/*.pdf
+data/cached_jobs.json
+!data/sample_resume.pdf
 
 # Node
 node_modules/
@@ -41,6 +42,5 @@ Thumbs.db
 .idea/
 
 # Cache
-__pycache__/
 .pytest_cache/
 .mypy_cache/
