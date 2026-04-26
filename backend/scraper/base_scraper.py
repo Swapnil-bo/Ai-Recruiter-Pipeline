@@ -1,3 +1,4 @@
+import re
 import asyncio
 import logging
 import hashlib
@@ -88,15 +89,8 @@ class BaseScraper(ABC):
         response.raise_for_status()
         return response
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=8),
-        retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException)),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
     async def _get_json(self, url: str, params: Optional[dict] = None) -> dict | list:
-        """GET request that returns parsed JSON."""
+        """GET request that returns parsed JSON. Relies on _get's retry logic."""
         response = await self._get(url, params=params)
         return response.json()
 
@@ -114,10 +108,9 @@ class BaseScraper(ABC):
     @staticmethod
     def clean_text(text: str) -> str:
         """Normalize whitespace and strip HTML artifacts."""
-        import re
-        text = re.sub(r"<[^>]+>", " ", text)        # strip HTML tags
-        text = re.sub(r"&[a-z]+;", " ", text)        # strip HTML entities
-        text = re.sub(r"\s+", " ", text)             # collapse whitespace
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"&[a-z]+;", " ", text)
+        text = re.sub(r"\s+", " ", text)
         return text.strip()
 
     @staticmethod
