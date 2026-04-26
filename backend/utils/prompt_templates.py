@@ -1,3 +1,4 @@
+import json
 from backend.core.schemas import Resume, Job
 
 
@@ -71,7 +72,7 @@ def scorer_user_prompt(
 - Required Tags: {", ".join(job.tags) if job.tags else "None"}
 
 ## INITIAL EVALUATION
-{raw_match}
+{json.dumps(raw_match, indent=2)}
 
 ## YOUR TASK
 Validate the above evaluation. Adjust scores if they seem inflated or deflated.
@@ -103,6 +104,7 @@ The tone should be professional yet personable — not robotic."""
 
 
 def cover_letter_user_prompt(resume: Resume, job: Job, fit_score: float) -> str:
+    is_remote = "remote" in " ".join(job.tags).lower()
     return f"""Write a tailored cover letter for this candidate applying to this job.
 
 ## CANDIDATE
@@ -117,7 +119,8 @@ def cover_letter_user_prompt(resume: Resume, job: Job, fit_score: float) -> str:
 ## JOB
 - Title: {job.title}
 - Company: {job.company}
-- Location: {job.location}
+- Location: {job.location}{" (Remote)" if is_remote else ""}
+- Salary: {job.salary or "Not specified"}
 - Description:
 {job.description[:2000]}
 
