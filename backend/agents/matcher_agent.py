@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import Optional
+from typing import Optional, Callable
 from backend.core.schemas import Job, Resume, MatchResult
 from backend.utils.ollama_client import OllamaClient, OllamaJSONParseError
 from backend.utils.prompt_templates import (
@@ -49,7 +49,6 @@ class MatcherAgent:
         Match a single job against the resume.
         Returns None if job is filtered out or matching fails.
         """
-        # Fast rule-based pre-filter
         rule_score = self._rule_based_score(resume, job)
         if rule_score < self.RULE_FILTER_THRESHOLD:
             logger.debug(
@@ -58,7 +57,6 @@ class MatcherAgent:
             )
             return None
 
-        # LLM deep match
         async with self._semaphore:
             return await self._llm_match(resume, job, rule_score)
 
@@ -66,7 +64,7 @@ class MatcherAgent:
         self,
         resume: Resume,
         jobs: list[Job],
-        on_progress: Optional[callable] = None,
+        on_progress: Optional[Callable] = None,
     ) -> list[MatchResult]:
         """
         Match resume against a list of jobs concurrently.
@@ -105,7 +103,6 @@ class MatcherAgent:
 
         await asyncio.gather(*[process(job) for job in jobs])
 
-        # Sort by fit_score descending
         results.sort(key=lambda r: r.fit_score, reverse=True)
         logger.info(
             f"[matcher] Done. {len(results)}/{total} jobs matched. "
@@ -132,8 +129,7 @@ class MatcherAgent:
         ]).lower()
 
         matched = sum(1 for skill in resume_skills if skill in job_text)
-        score = matched / len(resume_skills)
-        return score
+        return matched / len(resume_skills)
 
     # ── LLM Matching ───────────────────────────────────────────────────────────
 
@@ -179,19 +175,19 @@ class MatcherAgent:
 
         raw_breakdown = raw.get("score_breakdown", {})
         score_breakdown = {
-            "skills":        clamp(raw_breakdown.get("skills", fit_score)),
-            "experience":    clamp(raw_breakdown.get("experience", fit_score)),
+            "skills":         clamp(raw_breakdown.get("skills", fit_score)),
+            "experience":     clamp(raw_breakdown.get("experience", fit_score)),
             "role_alignment": clamp(raw_breakdown.get("role_alignment", fit_score)),
-            "culture_fit":   clamp(raw_breakdown.get("culture_fit", fit_score)),
+            "culture_fit":    clamp(raw_breakdown.get("culture_fit", fit_score)),
         }
 
         matched_skills = [
-            str(s) for s in raw.get("matched_skills", [])
-            if s and isinstance(s, str)
+            str(s).strip() for s in raw.get("matched_skills", [])
+            if s is not None and str(s).strip()
         ]
         missing_skills = [
-            str(s) for s in raw.get("missing_skills", [])
-            if s and isinstance(s, str)
+            str(s).strip() for s in raw.get("missing_skills", [])
+            if s is not None and str(s).strip()
         ]
         reasoning = str(raw.get("reasoning", "No reasoning provided."))[:500]
 
@@ -228,10 +224,10 @@ class MatcherAgent:
             job_id=job.id,
             fit_score=fit_score,
             score_breakdown={
-                "skills": fit_score,
-                "experience": fit_score,
+                "skills":         fit_score,
+                "experience":     fit_score,
                 "role_alignment": fit_score,
-                "culture_fit": fit_score,
+                "culture_fit":    fit_score,
             },
             matched_skills=matched[:20],
             missing_skills=missing[:20],
