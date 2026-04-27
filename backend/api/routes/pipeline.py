@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
@@ -55,9 +56,9 @@ async def get_pipeline_status():
     and timing from the last completed run.
     """
     return PipelineStatusResponse(
-        is_running=orchestrator._is_running,
-        current_stage=orchestrator._current_stage if orchestrator._is_running else None,
-        timing_report=orchestrator.get_timing_report() if orchestrator._stage_times else None,
+        is_running=orchestrator.is_running,
+        current_stage=orchestrator.current_stage if orchestrator.is_running else None,
+        timing_report=orchestrator.get_timing_report() if orchestrator.has_run else None,
     )
 
 
@@ -96,7 +97,7 @@ async def run_pipeline(request: PipelineRunRequest):
         )
 
     # Guard: pipeline already running
-    if orchestrator._is_running:
+    if orchestrator.is_running:
         raise HTTPException(
             status_code=409,
             detail=(
@@ -154,10 +155,7 @@ async def run_pipeline(request: PipelineRunRequest):
         "Monitor progress via GET /pipeline/status or WebSocket /ws/pipeline."
     ),
 )
-async def run_pipeline_background(
-    request: PipelineRunRequest,
-    background_tasks: BackgroundTasks,
-):
+async def run_pipeline_background(request: PipelineRunRequest):
     """
     Start the pipeline as a background task.
     Returns immediately — pipeline runs asynchronously.
@@ -169,7 +167,7 @@ async def run_pipeline_background(
             detail="No resume uploaded. Upload your resume first.",
         )
 
-    if orchestrator._is_running:
+    if orchestrator.is_running:
         raise HTTPException(
             status_code=409,
             detail="Pipeline is already running.",
@@ -185,7 +183,7 @@ async def run_pipeline_background(
         except Exception as e:
             logger.error(f"[pipeline] Background run failed: {e}")
 
-    background_tasks.add_task(_run)
+    asyncio.create_task(_run())
 
     logger.info("[pipeline] Pipeline started in background")
     return {
@@ -199,30 +197,30 @@ async def run_pipeline_background(
 
 @router.get(
     "/results",
+    response_model=PipelineResult,
     summary="Get results from last pipeline run",
-    description="Returns the assembled PipelineResult from the last completed run.",
+    description="Returns the full PipelineResult from the last completed run.",
 )
 async def get_last_results():
     """
     Returns results from the most recent pipeline run.
     Raises 404 if pipeline has never been run this session.
+    Raises 409 if pipeline is currently running.
     """
-    if orchestrator._is_running:
+    if orchestrator.is_running:
         raise HTTPException(
             status_code=409,
             detail="Pipeline is currently running. Results will be available when complete.",
         )
 
-    if not orchestrator._stage_times:
+    result = orchestrator.get_last_result()
+    if not result:
         raise HTTPException(
             status_code=404,
             detail="No pipeline results available. Run the pipeline first.",
         )
 
-    return {
-        "timing": orchestrator.get_timing_report(),
-        "message": "Use POST /pipeline/run to get full results with job data.",
-    }
+    return result
 
 
 @router.get(
@@ -231,7 +229,7 @@ async def get_last_results():
 )
 async def get_timing_report():
     """Returns per-stage timing from the last pipeline run."""
-    if not orchestrator._stage_times:
+    if not orchestrator.has_run:
         raise HTTPException(
             status_code=404,
             detail="No timing data available. Run the pipeline first.",
