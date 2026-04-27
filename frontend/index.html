@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- ── Primary Meta ──────────────────────────────────────────────────── -->
+    <title>AI Recruiter Pipeline</title>
+    <meta
+      name="description"
+      content="Multi-agent AI pipeline that scrapes job listings, matches them against your resume, scores opportunities by fit, and auto-drafts tailored cover letters. Powered by local Ollama LLMs."
+    />
+    <meta name="author" content="Swapnil Hazra" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- ── Open Graph ────────────────────────────────────────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AI Recruiter Pipeline" />
+    <meta
+      property="og:description"
+      content="Multi-agent AI that finds, ranks, and drafts cover letters for your best job matches."
+    />
+    <meta property="og:site_name" content="AI Recruiter Pipeline" />
+
+    <!-- ── Favicon ───────────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- ── Fonts ─────────────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- ── Inline Critical CSS ───────────────────────────────────────────── -->
+    <style>
+      /* ── Reset & Base ─────────────────────────────────────────────────── */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        /* Brand tokens */
+        --color-bg:           #0f172a;
+        --color-bg-secondary: #1e293b;
+        --color-bg-tertiary:  #334155;
+        --color-primary:      #3b82f6;
+        --color-primary-dark: #1d4ed8;
+        --color-accent:       #8b5cf6;
+        --color-text:         #f1f5f9;
+        --color-text-muted:   #94a3b8;
+        --color-border:       #334155;
+        --color-success:      #10b981;
+        --color-warning:      #f59e0b;
+        --color-error:        #ef4444;
+
+        /* Fonts */
+        --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+        /* Transitions */
+        --transition-fast:   150ms ease;
+        --transition-base:   250ms ease;
+        --transition-slow:   400ms ease;
+
+        /* Shadows */
+        --shadow-glow-blue:   0 0 20px rgba(59, 130, 246, 0.35);
+        --shadow-glow-violet: 0 0 20px rgba(139, 92, 246, 0.35);
+        --shadow-card:        0 4px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      html {
+        font-family: var(--font-sans);
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+      }
+
+      body {
+        min-height: 100vh;
+        background-color: var(--color-bg);
+        background-image:
+          radial-gradient(
+            ellipse 80% 50% at 50% -20%,
+            rgba(59, 130, 246, 0.08),
+            transparent
+          ),
+          radial-gradient(
+            ellipse 60% 40% at 80% 80%,
+            rgba(139, 92, 246, 0.06),
+            transparent
+          );
+        background-attachment: fixed;
+      }
+
+      /* ── Scrollbar ────────────────────────────────────────────────────── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--color-bg-secondary);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--color-bg-tertiary);
+        border-radius: 3px;
+        transition: background var(--transition-fast);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-muted);
+      }
+
+      /* ── Selection ────────────────────────────────────────────────────── */
+      ::selection {
+        background-color: rgba(59, 130, 246, 0.3);
+        color: #f1f5f9;
+      }
+
+      /* ── Focus Ring ───────────────────────────────────────────────────── */
+      :focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      /* ── Root Mount ───────────────────────────────────────────────────── */
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        isolation: isolate;
+      }
+
+      /* ── Loading Screen ───────────────────────────────────────────────── */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        background-color: var(--color-bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        z-index: 9999;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+      }
+
+      #app-loading.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .loading-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .loading-logo-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-glow-blue);
+        animation: loading-pulse 2s ease-in-out infinite;
+      }
+
+      .loading-logo-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .loading-logo-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .loading-logo-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        letter-spacing: -0.02em;
+      }
+
+      .loading-logo-sub {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        font-family: var(--font-mono);
+        letter-spacing: 0.05em;
+      }
+
+      .loading-bar-container {
+        width: 240px;
+        height: 3px;
+        background: var(--color-bg-tertiary);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .loading-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        border-radius: 2px;
+        animation: loading-bar 1.4s ease-in-out infinite;
+      }
+
+      .loading-status {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+      }
+
+      /* ── No Script ────────────────────────────────────────────────────── */
+      .noscript-banner {
+        position: fixed;
+        inset: 0;
+        background: var(--color-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        z-index: 99999;
+        padding: 24px;
+        text-align: center;
+      }
+
+      .noscript-banner h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-error);
+      }
+
+      .noscript-banner p {
+        color: var(--color-text-muted);
+        max-width: 400px;
+        line-height: 1.6;
+      }
+
+      /* ── Keyframes ────────────────────────────────────────────────────── */
+      @keyframes loading-pulse {
+        0%, 100% {
+          box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 0 28px rgba(59, 130, 246, 0.8);
+          transform: scale(1.05);
+        }
+      }
+
+      @keyframes loading-bar {
+        0%   { transform: translateX(-100%); }
+        50%  { transform: translateX(0%); }
+        100% { transform: translateX(100%); }
+      }
+
+      /* ── Utility: Visually Hidden ─────────────────────────────────────── */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+
+      /* ── Reduced Motion ───────────────────────────────────────────────── */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- ── No Script Fallback ─────────────────────────────────────────────── -->
+    <noscript>
+      <div class="noscript-banner">
+        <h1>JavaScript Required</h1>
+        <p>
+          AI Recruiter Pipeline requires JavaScript to run.
+          Please enable JavaScript in your browser settings and reload the page.
+        </p>
+      </div>
+    </noscript>
+
+    <!-- ── Loading Screen ─────────────────────────────────────────────────── -->
+    <div id="app-loading" role="status" aria-label="Loading AI Recruiter Pipeline">
+      <div class="loading-logo">
+        <div class="loading-logo-icon" aria-hidden="true">
+          <!-- Briefcase icon -->
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <div class="loading-logo-text">
+          <span class="loading-logo-name">AI Recruiter</span>
+          <span class="loading-logo-sub">PIPELINE v1.0</span>
+        </div>
+      </div>
+
+      <div class="loading-bar-container" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div class="loading-bar"></div>
+      </div>
+
+      <span class="loading-status" id="loading-status-text">
+        Initializing...
+      </span>
+    </div>
+
+    <!-- ── React Root ──────────────────────────────────────────────────────── -->
+    <div id="root"></div>
+
+    <!-- ── Inline Boot Script ─────────────────────────────────────────────── -->
+    <script>
+      (function () {
+        // ── Theme persistence ──────────────────────────────────────────────
+        try {
+          const saved = localStorage.getItem("theme");
+          if (saved === "light") {
+            document.documentElement.classList.remove("dark");
+          } else {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {}
+
+        // ── Loading screen messages ────────────────────────────────────────
+        const messages = [
+          "Initializing agents...",
+          "Connecting to Ollama...",
+          "Loading pipeline...",
+          "Almost ready...",
+        ];
+        let idx = 0;
+        const el = document.getElementById("loading-status-text");
+        const interval = setInterval(function () {
+          idx = (idx + 1) % messages.length;
+          if (el) el.textContent = messages[idx];
+        }, 600);
+
+        // ── Hide loading screen when React mounts ──────────────────────────
+        window.__hideLoader = function () {
+          clearInterval(interval);
+          const loader = document.getElementById("app-loading");
+          if (loader) {
+            loader.classList.add("hidden");
+            setTimeout(function () {
+              loader.remove();
+            }, 500);
+          }
+        };
+
+        // ── Fallback: force hide after 8s ──────────────────────────────────
+        setTimeout(function () {
+          if (window.__hideLoader) window.__hideLoader();
+        }, 8000);
+      })();
+    </script>
+
+    <!-- ── App Entry Point ────────────────────────────────────────────────── -->
+    <script type="module" src="/src/main.jsx"></script>
+
+  </body>
+</html>
