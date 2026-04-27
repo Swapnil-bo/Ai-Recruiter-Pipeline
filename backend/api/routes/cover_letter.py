@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
@@ -11,9 +12,13 @@ from backend.utils.cache import job_cache
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/cover-letter", tags=["Cover Letter"])
 
-# ── In-memory cover letter store ───────────────────────────────────────────────
-# Lightweight session store — keyed by job_id
+# ── Session Store ──────────────────────────────────────────────────────────────
+# Lightweight in-memory store — keyed by job_id
 _cover_letter_store: dict[str, CoverLetter] = {}
+_store_lock = asyncio.Lock()
+
+# ── Module-level agent singleton ───────────────────────────────────────────────
+_agent = CoverLetterAgent()
 
 
 # ── Request / Response Models ──────────────────────────────────────────────────
@@ -79,45 +84,6 @@ async def get_all_cover_letters():
     )
 
 
-@router.get(
-    "/{job_id}",
-    response_model=CoverLetterResponse,
-    summary="Get cover letter for a specific job",
-)
-async def get_cover_letter(job_id: str):
-    """
-    Retrieve the cover letter for a specific job by job ID.
-    Raises 404 if not yet generated.
-    """
-    cl = _cover_letter_store.get(job_id)
-    if not cl:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                f"No cover letter found for job '{job_id}'. "
-                f"Generate one via POST /cover-letter/generate."
-            ),
-        )
-    return _to_response(cl)
-
-
-@router.get(
-    "/{job_id}/text",
-    response_class=PlainTextResponse,
-    summary="Get cover letter as plain text",
-    description="Returns just the raw cover letter text — useful for copy-paste.",
-)
-async def get_cover_letter_text(job_id: str):
-    """Returns the cover letter content as plain text."""
-    cl = _cover_letter_store.get(job_id)
-    if not cl:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No cover letter found for job '{job_id}'.",
-        )
-    return cl.content
-
-
 @router.post(
     "/generate",
     response_model=CoverLetterResponse,
@@ -164,13 +130,12 @@ async def generate_cover_letter(request: GenerateRequest):
         )
 
     # ── Guard: fit score too low ───────────────────────────────────────────────
-    agent = CoverLetterAgent()
-    if request.fit_score < agent.MIN_FIT_SCORE_FOR_GENERATION:
+    if request.fit_score < _agent.MIN_FIT_SCORE_FOR_GENERATION:
         raise HTTPException(
             status_code=422,
             detail=(
                 f"Fit score {request.fit_score:.1f} is below the minimum threshold "
-                f"({agent.MIN_FIT_SCORE_FOR_GENERATION}). "
+                f"({_agent.MIN_FIT_SCORE_FOR_GENERATION}). "
                 f"Cover letters are only generated for strong matches."
             ),
         )
@@ -181,7 +146,7 @@ async def generate_cover_letter(request: GenerateRequest):
     )
 
     # ── Generate ───────────────────────────────────────────────────────────────
-    cover_letter = await agent.generate_one(
+    cover_letter = await _agent.generate_one(
         resume=resume,
         job=job,
         fit_score=request.fit_score,
@@ -194,7 +159,8 @@ async def generate_cover_letter(request: GenerateRequest):
         )
 
     # ── Store ──────────────────────────────────────────────────────────────────
-    _cover_letter_store[request.job_id] = cover_letter
+    async with _store_lock:
+        _cover_letter_store[request.job_id] = cover_letter
 
     logger.info(
         f"[cover_letter] Generated for '{job.title}' at {job.company} — "
@@ -202,6 +168,63 @@ async def generate_cover_letter(request: GenerateRequest):
     )
 
     return _to_response(cover_letter)
+
+
+# ── Static routes MUST come before /{job_id} to avoid route conflicts ──────────
+
+@router.delete(
+    "/",
+    summary="Clear all cover letters",
+)
+async def clear_all_cover_letters():
+    """Clear all cover letters from the session store."""
+    async with _store_lock:
+        count = len(_cover_letter_store)
+        _cover_letter_store.clear()
+    logger.info(f"[cover_letter] Cleared {count} cover letters")
+    return {
+        "message": "All cover letters cleared.",
+        "deleted": count,
+    }
+
+
+@router.get(
+    "/{job_id}",
+    response_model=CoverLetterResponse,
+    summary="Get cover letter for a specific job",
+)
+async def get_cover_letter(job_id: str):
+    """
+    Retrieve the cover letter for a specific job by job ID.
+    Raises 404 if not yet generated.
+    """
+    cl = _cover_letter_store.get(job_id)
+    if not cl:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No cover letter found for job '{job_id}'. "
+                f"Generate one via POST /cover-letter/generate."
+            ),
+        )
+    return _to_response(cl)
+
+
+@router.get(
+    "/{job_id}/text",
+    response_class=PlainTextResponse,
+    summary="Get cover letter as plain text",
+    description="Returns just the raw cover letter text — useful for copy-paste.",
+)
+async def get_cover_letter_text(job_id: str):
+    """Returns the cover letter content as plain text."""
+    cl = _cover_letter_store.get(job_id)
+    if not cl:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No cover letter found for job '{job_id}'.",
+        )
+    return cl.content
 
 
 @router.put(
@@ -216,30 +239,29 @@ async def update_cover_letter(job_id: str, request: UpdateRequest):
     Used when user edits the generated text in the frontend editor.
     Marks the cover letter as edited.
     """
-    if job_id not in _cover_letter_store:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No cover letter found for job '{job_id}'. Generate one first.",
+    async with _store_lock:
+        if job_id not in _cover_letter_store:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No cover letter found for job '{job_id}'. Generate one first.",
+            )
+
+        existing = _cover_letter_store[job_id]
+
+        # Replace content, preserve job_id and generated_at
+        updated = CoverLetter(
+            job_id=existing.job_id,
+            content=request.content.strip(),
+            generated_at=existing.generated_at,
         )
-
-    existing = _cover_letter_store[job_id]
-
-    # Replace content, preserve job_id and generated_at
-    updated = CoverLetter(
-        job_id=existing.job_id,
-        content=request.content.strip(),
-        generated_at=existing.generated_at,
-    )
-    _cover_letter_store[job_id] = updated
+        _cover_letter_store[job_id] = updated
 
     logger.info(
         f"[cover_letter] Updated for job '{job_id}' — "
         f"{len(updated.content.split())} words"
     )
 
-    response = _to_response(updated)
-    response.is_edited = True
-    return response
+    return _to_response(updated, is_edited=True)
 
 
 @router.delete(
@@ -248,29 +270,16 @@ async def update_cover_letter(job_id: str, request: UpdateRequest):
 )
 async def delete_cover_letter(job_id: str):
     """Delete a specific cover letter from the session store."""
-    if job_id not in _cover_letter_store:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No cover letter found for job '{job_id}'.",
-        )
-    del _cover_letter_store[job_id]
+    async with _store_lock:
+        if job_id not in _cover_letter_store:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No cover letter found for job '{job_id}'.",
+            )
+        del _cover_letter_store[job_id]
+
     logger.info(f"[cover_letter] Deleted cover letter for job '{job_id}'")
     return {"message": f"Cover letter for job '{job_id}' deleted."}
-
-
-@router.delete(
-    "/",
-    summary="Clear all cover letters",
-)
-async def clear_all_cover_letters():
-    """Clear all cover letters from the session store."""
-    count = len(_cover_letter_store)
-    _cover_letter_store.clear()
-    logger.info(f"[cover_letter] Cleared {count} cover letters")
-    return {
-        "message": "All cover letters cleared.",
-        "deleted": count,
-    }
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
