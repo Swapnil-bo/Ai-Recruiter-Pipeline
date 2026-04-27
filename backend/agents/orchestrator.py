@@ -318,7 +318,7 @@ class PipelineOrchestrator:
         await self._emit(on_status, PipelineStatus(
             stage=STAGE_SCRAPING,
             progress=10,
-            message="Scraping RemoteOK...",
+            message="Scraping RemoteOK, HN, and Adzuna...",
         ))
 
         # Run all scrapers concurrently
@@ -326,7 +326,6 @@ class PipelineOrchestrator:
             self._scrape_source(RemoteOKScraper, keywords),
             self._scrape_source(HNScraper, keywords),
             self._scrape_source(AdzunaScraper, keywords),
-            return_exceptions=False,
         )
 
         await self._emit(on_status, PipelineStatus(
@@ -348,7 +347,7 @@ class PipelineOrchestrator:
         await self._emit(on_status, PipelineStatus(
             stage=STAGE_SCRAPING,
             progress=100,
-            message=f"Scraped {len(all_jobs)} jobs from {3} sources",
+            message=f"Scraped {len(all_jobs)} jobs from 3 sources",
             total_jobs=len(all_jobs),
         ))
 
@@ -453,8 +452,8 @@ class PipelineOrchestrator:
             stage=STAGE_SCORING,
             progress=100,
             message=(
-                f"Scoring complete. "
-                f"Top match: {top.fit_score:.1f}/10" if top else "Scoring complete"
+                f"Scoring complete. Top match: {top.fit_score:.1f}/10"
+                if top else "Scoring complete"
             ),
             jobs_processed=len(scored),
             total_jobs=len(matches),
@@ -580,9 +579,9 @@ class PipelineOrchestrator:
         Joins jobs + matches + cover letters by job_id.
         Sorted by fit_score descending.
         """
-        job_map: dict[str, Job]          = {j.id: j for j in jobs}
+        job_map: dict[str, Job]           = {j.id: j for j in jobs}
         match_map: dict[str, MatchResult] = {m.job_id: m for m in matches}
-        cl_map: dict[str, CoverLetter]   = {c.job_id: c for c in cover_letters}
+        cl_map: dict[str, CoverLetter]    = {c.job_id: c for c in cover_letters}
 
         results: list[JobWithScore] = []
         for job_id, match in match_map.items():
