@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
     <!-- ── Primary Meta ──────────────────────────────────────────────────── -->
-    <title>AI Recruiter Pipeline</title>
+    <title>AI Recruiter Pipeline — Find Your Next Role with AI</title>
     <meta
       name="description"
       content="Multi-agent AI pipeline that scrapes job listings, matches them against your resume, scores opportunities by fit, and auto-drafts tailored cover letters. Powered by local Ollama LLMs."
@@ -15,6 +15,8 @@
     <meta name="theme-color" content="#0f172a" />
     <meta name="color-scheme" content="dark" />
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="application-name" content="AI Recruiter Pipeline" />
+    <meta name="keywords" content="AI, recruiter, pipeline, jobs, resume, cover letter, LLM, Ollama" />
 
     <!-- ── Open Graph ────────────────────────────────────────────────────── -->
     <meta property="og:type" content="website" />
@@ -25,42 +27,63 @@
     />
     <meta property="og:site_name" content="AI Recruiter Pipeline" />
 
+    <!-- ── Twitter Card ───────────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="AI Recruiter Pipeline" />
+    <meta name="twitter:description" content="Multi-agent AI that finds, ranks, and drafts cover letters for your best job matches." />
+
     <!-- ── Favicon ───────────────────────────────────────────────────────── -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- ── Fonts ─────────────────────────────────────────────────────────── -->
+    <!-- ── Preconnect ────────────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- ── Fonts ─────────────────────────────────────────────────────────── -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- ── Inline Critical CSS ───────────────────────────────────────────── -->
+    <!-- ── Critical CSS ───────────────────────────────────────────────────── -->
     <style>
-      /* ── Reset & Base ─────────────────────────────────────────────────── */
+      /* ── Reset ────────────────────────────────────────────────────────── */
       *, *::before, *::after {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
 
+      /* ── Design Tokens ────────────────────────────────────────────────── */
       :root {
-        /* Brand tokens */
-        --color-bg:           #0f172a;
-        --color-bg-secondary: #1e293b;
-        --color-bg-tertiary:  #334155;
-        --color-primary:      #3b82f6;
-        --color-primary-dark: #1d4ed8;
-        --color-accent:       #8b5cf6;
-        --color-text:         #f1f5f9;
-        --color-text-muted:   #94a3b8;
-        --color-border:       #334155;
-        --color-success:      #10b981;
-        --color-warning:      #f59e0b;
-        --color-error:        #ef4444;
+        /* Backgrounds */
+        --color-bg:            #0f172a;
+        --color-bg-secondary:  #1e293b;
+        --color-bg-tertiary:   #334155;
+
+        /* Brand */
+        --color-primary:       #3b82f6;
+        --color-primary-light: #60a5fa;
+        --color-primary-dark:  #1d4ed8;
+        --color-accent:        #8b5cf6;
+        --color-accent-light:  #a78bfa;
+        --color-cyan:          #06b6d4;
+        --color-green:         #10b981;
+
+        /* Text */
+        --color-text:          #f1f5f9;
+        --color-text-secondary:#cbd5e1;
+        --color-text-muted:    #94a3b8;
+        --color-text-faint:    #475569;
+
+        /* Semantic */
+        --color-success:       #10b981;
+        --color-warning:       #f59e0b;
+        --color-error:         #ef4444;
+        --color-border:        rgba(255, 255, 255, 0.08);
 
         /* Fonts */
         --font-sans: "Inter", system-ui, -apple-system, sans-serif;
@@ -72,235 +95,560 @@
         --transition-slow:   400ms ease;
 
         /* Shadows */
-        --shadow-glow-blue:   0 0 20px rgba(59, 130, 246, 0.35);
-        --shadow-glow-violet: 0 0 20px rgba(139, 92, 246, 0.35);
-        --shadow-card:        0 4px 24px rgba(0, 0, 0, 0.3);
+        --shadow-glow-blue:    0 0 20px rgba(59, 130, 246, 0.35);
+        --shadow-glow-violet:  0 0 20px rgba(139, 92, 246, 0.35);
+        --shadow-glow-cyan:    0 0 20px rgba(6, 182, 212, 0.35);
+        --shadow-card:         0 4px 24px rgba(0, 0, 0, 0.3);
+
+        /* Loader */
+        --loader-size: 240px;
       }
 
+      /* ── Base ─────────────────────────────────────────────────────────── */
       html {
-        font-family: var(--font-sans);
-        background-color: var(--color-bg);
-        color: var(--color-text);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
-        scroll-behavior: smooth;
-        overflow-x: hidden;
+        font-family:               var(--font-sans);
+        background-color:          var(--color-bg);
+        color:                     var(--color-text);
+        -webkit-font-smoothing:    antialiased;
+        -moz-osx-font-smoothing:   grayscale;
+        text-rendering:            optimizeLegibility;
+        scroll-behavior:           smooth;
+        overflow-x:                hidden;
+        font-feature-settings:     "cv02", "cv03", "cv04", "cv11";
       }
 
       body {
-        min-height: 100vh;
-        background-color: var(--color-bg);
+        min-height:           100vh;
+        background-color:     var(--color-bg);
         background-image:
           radial-gradient(
-            ellipse 80% 50% at 50% -20%,
-            rgba(59, 130, 246, 0.08),
+            ellipse 80% 60% at 50% -10%,
+            rgba(59, 130, 246, 0.10),
             transparent
           ),
           radial-gradient(
-            ellipse 60% 40% at 80% 80%,
-            rgba(139, 92, 246, 0.06),
+            ellipse 50% 40% at 85% 85%,
+            rgba(139, 92, 246, 0.08),
+            transparent
+          ),
+          radial-gradient(
+            ellipse 40% 30% at 10% 60%,
+            rgba(6, 182, 212, 0.05),
             transparent
           );
         background-attachment: fixed;
       }
 
       /* ── Scrollbar ────────────────────────────────────────────────────── */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--color-bg-secondary);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--color-bg-tertiary);
+      ::-webkit-scrollbar         { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track   { background: transparent; }
+      ::-webkit-scrollbar-thumb   {
+        background:    rgba(71, 85, 105, 0.5);
         border-radius: 3px;
-        transition: background var(--transition-fast);
+        transition:    background var(--transition-fast);
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--color-text-muted);
-      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.7); }
 
       /* ── Selection ────────────────────────────────────────────────────── */
       ::selection {
-        background-color: rgba(59, 130, 246, 0.3);
-        color: #f1f5f9;
+        background-color: rgba(59, 130, 246, 0.30);
+        color:            #f1f5f9;
       }
 
       /* ── Focus Ring ───────────────────────────────────────────────────── */
       :focus-visible {
-        outline: 2px solid var(--color-primary);
+        outline:        2px solid var(--color-primary);
         outline-offset: 2px;
-        border-radius: 4px;
+        border-radius:  4px;
       }
 
-      /* ── Root Mount ───────────────────────────────────────────────────── */
+      /* ── Root ─────────────────────────────────────────────────────────── */
       #root {
-        min-height: 100vh;
-        display: flex;
+        min-height:     100vh;
+        display:        flex;
         flex-direction: column;
-        isolation: isolate;
+        isolation:      isolate;
       }
 
-      /* ── Loading Screen ───────────────────────────────────────────────── */
+      /* ════════════════════════════════════════════════════════════════════
+         LOADING SCREEN
+         ════════════════════════════════════════════════════════════════════ */
       #app-loading {
-        position: fixed;
-        inset: 0;
+        position:        fixed;
+        inset:           0;
         background-color: var(--color-bg);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        display:         flex;
+        flex-direction:  column;
+        align-items:     center;
         justify-content: center;
-        gap: 24px;
-        z-index: 9999;
-        transition: opacity 0.4s ease, visibility 0.4s ease;
+        gap:             0;
+        z-index:         9999;
+        transition:      opacity 0.5s ease, visibility 0.5s ease;
+        overflow:        hidden;
       }
 
       #app-loading.hidden {
-        opacity: 0;
-        visibility: hidden;
+        opacity:        0;
+        visibility:     hidden;
         pointer-events: none;
       }
 
+      /* ── Ambient background orbs ──────────────────────────────────────── */
+      .loader-orb {
+        position:      absolute;
+        border-radius: 50%;
+        filter:        blur(80px);
+        pointer-events:none;
+        animation:     orb-drift 8s ease-in-out infinite alternate;
+      }
+
+      .loader-orb-1 {
+        width:      500px;
+        height:     500px;
+        top:        -200px;
+        left:       -100px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 70%);
+        animation-delay: 0s;
+      }
+
+      .loader-orb-2 {
+        width:      400px;
+        height:     400px;
+        bottom:     -150px;
+        right:      -100px;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.10), transparent 70%);
+        animation-delay: -4s;
+      }
+
+      .loader-orb-3 {
+        width:      300px;
+        height:     300px;
+        top:        40%;
+        left:       60%;
+        background: radial-gradient(circle, rgba(6, 182, 212, 0.06), transparent 70%);
+        animation-delay: -2s;
+      }
+
+      /* ── Grid dots background ─────────────────────────────────────────── */
+      .loader-grid {
+        position:   absolute;
+        inset:      0;
+        background-image:
+          radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black, transparent);
+        pointer-events: none;
+      }
+
+      /* ── Main content wrapper ─────────────────────────────────────────── */
+      .loader-content {
+        position:        relative;
+        display:         flex;
+        flex-direction:  column;
+        align-items:     center;
+        gap:             40px;
+        z-index:         1;
+        animation:       loader-content-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      /* ── Logo group ───────────────────────────────────────────────────── */
       .loading-logo {
-        display: flex;
+        display:     flex;
+        flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap:         20px;
+      }
+
+      /* Icon with ring ─────────────────────────────────────────────────── */
+      .loading-icon-wrapper {
+        position: relative;
+        width:    80px;
+        height:   80px;
+      }
+
+      .loading-icon-ring {
+        position:      absolute;
+        inset:         -8px;
+        border-radius: 50%;
+        border:        1.5px solid transparent;
+        background:
+          linear-gradient(var(--color-bg), var(--color-bg)) padding-box,
+          conic-gradient(
+            from 0deg,
+            rgba(59, 130, 246, 0),
+            rgba(59, 130, 246, 0.8),
+            rgba(139, 92, 246, 0.8),
+            rgba(59, 130, 246, 0)
+          ) border-box;
+        animation: ring-spin 3s linear infinite;
+      }
+
+      .loading-icon-ring-2 {
+        position:      absolute;
+        inset:         -16px;
+        border-radius: 50%;
+        border:        1px solid transparent;
+        background:
+          linear-gradient(var(--color-bg), var(--color-bg)) padding-box,
+          conic-gradient(
+            from 180deg,
+            rgba(6, 182, 212, 0),
+            rgba(6, 182, 212, 0.4),
+            rgba(139, 92, 246, 0.4),
+            rgba(6, 182, 212, 0)
+          ) border-box;
+        animation: ring-spin 5s linear infinite reverse;
       }
 
       .loading-logo-icon {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
+        position:        relative;
+        width:           80px;
+        height:          80px;
+        background:      linear-gradient(135deg, #1d4ed8 0%, #7c3aed 100%);
+        border-radius:   20px;
+        display:         flex;
+        align-items:     center;
         justify-content: center;
-        box-shadow: var(--shadow-glow-blue);
-        animation: loading-pulse 2s ease-in-out infinite;
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,0.08),
+          0 0 40px rgba(59, 130, 246, 0.40),
+          0 0 80px rgba(139, 92, 246, 0.20);
+        animation:       icon-pulse 3s ease-in-out infinite;
       }
 
       .loading-logo-icon svg {
-        width: 28px;
-        height: 28px;
-        color: white;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
+        width:            42px;
+        height:           42px;
+        color:            white;
+        fill:             none;
+        stroke:           currentColor;
+        stroke-width:     1.5;
+        stroke-linecap:   round;
+        stroke-linejoin:  round;
+        filter:           drop-shadow(0 0 8px rgba(255,255,255,0.4));
       }
 
+      /* Text lockup ────────────────────────────────────────────────────── */
       .loading-logo-text {
-        display: flex;
+        display:        flex;
         flex-direction: column;
+        align-items:    center;
+        gap:            6px;
       }
 
       .loading-logo-name {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #f1f5f9;
-        letter-spacing: -0.02em;
+        font-size:      1.75rem;
+        font-weight:    800;
+        letter-spacing: -0.04em;
+        background:     linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height:    1;
       }
 
-      .loading-logo-sub {
-        font-size: 0.75rem;
-        color: var(--color-text-muted);
-        font-family: var(--font-mono);
-        letter-spacing: 0.05em;
+      .loading-logo-tagline {
+        font-size:      0.8125rem;
+        color:          var(--color-text-muted);
+        font-family:    var(--font-mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      /* ── Agent steps ──────────────────────────────────────────────────── */
+      .loading-agents {
+        display:         flex;
+        align-items:     center;
+        gap:             0;
+        position:        relative;
+      }
+
+      .agent-step {
+        display:         flex;
+        flex-direction:  column;
+        align-items:     center;
+        gap:             8px;
+        position:        relative;
+        animation:       agent-step-in 0.5s ease-out both;
+      }
+
+      .agent-step:nth-child(1) { animation-delay: 0.1s; }
+      .agent-step:nth-child(2) { animation-delay: 0.25s; }
+      .agent-step:nth-child(3) { animation-delay: 0.4s; }
+      .agent-step:nth-child(4) { animation-delay: 0.55s; }
+      .agent-step:nth-child(5) { animation-delay: 0.7s; }
+
+      .agent-dot {
+        width:         36px;
+        height:        36px;
+        border-radius: 50%;
+        display:       flex;
+        align-items:   center;
+        justify-content: center;
+        position:      relative;
+        flex-shrink:   0;
+      }
+
+      .agent-dot-inner {
+        width:         36px;
+        height:        36px;
+        border-radius: 50%;
+        border:        1.5px solid rgba(255,255,255,0.10);
+        background:    rgba(255,255,255,0.04);
+        display:       flex;
+        align-items:   center;
+        justify-content: center;
+        transition:    all 0.3s ease;
+      }
+
+      .agent-dot-inner svg {
+        width:          16px;
+        height:         16px;
+        fill:           none;
+        stroke:         var(--color-text-muted);
+        stroke-width:   1.5;
+        stroke-linecap: round;
+        stroke-linejoin:round;
+        transition:     stroke 0.3s ease;
+      }
+
+      /* Active agent step animation */
+      .agent-step.active .agent-dot-inner {
+        border-color: rgba(59, 130, 246, 0.6);
+        background:   rgba(59, 130, 246, 0.12);
+        box-shadow:   0 0 16px rgba(59, 130, 246, 0.30);
+        animation:    dot-active-pulse 1.2s ease-in-out infinite;
+      }
+
+      .agent-step.active .agent-dot-inner svg {
+        stroke: #60a5fa;
+      }
+
+      .agent-label {
+        font-size:    0.6875rem;
+        font-family:  var(--font-mono);
+        color:        var(--color-text-faint);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space:  nowrap;
+        transition:   color 0.3s ease;
+      }
+
+      .agent-step.active .agent-label {
+        color: #60a5fa;
+      }
+
+      /* Connector between steps */
+      .agent-connector {
+        width:          40px;
+        height:         1.5px;
+        background:     linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06));
+        margin:         0 4px;
+        margin-bottom:  22px;
+        position:       relative;
+        overflow:       hidden;
+        flex-shrink:    0;
+      }
+
+      .agent-connector::after {
+        content:    "";
+        position:   absolute;
+        inset:      0;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.8), transparent);
+        transform:  translateX(-100%);
+        animation:  connector-flow 2s ease-in-out infinite;
+      }
+
+      /* ── Progress bar ─────────────────────────────────────────────────── */
+      .loading-progress {
+        display:        flex;
+        flex-direction: column;
+        align-items:    center;
+        gap:            12px;
+        width:          100%;
+        max-width:      320px;
       }
 
       .loading-bar-container {
-        width: 240px;
-        height: 3px;
-        background: var(--color-bg-tertiary);
-        border-radius: 2px;
-        overflow: hidden;
+        width:         100%;
+        height:        2px;
+        background:    rgba(255,255,255,0.06);
+        border-radius: 1px;
+        overflow:      hidden;
+        position:      relative;
       }
 
-      .loading-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-        border-radius: 2px;
-        animation: loading-bar 1.4s ease-in-out infinite;
+      .loading-bar-track {
+        height:        100%;
+        width:         0%;
+        background:    linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+        border-radius: 1px;
+        transition:    width 0.4s ease;
+        position:      relative;
+      }
+
+      .loading-bar-track::after {
+        content:    "";
+        position:   absolute;
+        inset:      0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+        animation:  bar-shimmer 1.5s ease-in-out infinite;
+      }
+
+      .loading-bar-indeterminate {
+        height:        100%;
+        width:         35%;
+        background:    linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, transparent);
+        border-radius: 1px;
+        animation:     bar-indeterminate 1.6s ease-in-out infinite;
       }
 
       .loading-status {
-        font-size: 0.75rem;
-        color: var(--color-text-muted);
-        font-family: var(--font-mono);
-        letter-spacing: 0.04em;
+        font-size:      0.75rem;
+        color:          var(--color-text-muted);
+        font-family:    var(--font-mono);
+        letter-spacing: 0.06em;
+        height:         1rem;
+        transition:     opacity 0.2s ease;
+      }
+
+      /* ── Version badge ────────────────────────────────────────────────── */
+      .loading-version {
+        position:       absolute;
+        bottom:         32px;
+        left:           50%;
+        transform:      translateX(-50%);
+        display:        flex;
+        align-items:    center;
+        gap:            8px;
+        font-size:      0.6875rem;
+        font-family:    var(--font-mono);
+        color:          var(--color-text-faint);
+        letter-spacing: 0.08em;
+      }
+
+      .loading-version-dot {
+        width:         4px;
+        height:        4px;
+        border-radius: 50%;
+        background:    var(--color-green);
+        box-shadow:    0 0 6px var(--color-green);
+        animation:     version-dot-pulse 2s ease-in-out infinite;
+      }
+
+      /* ─────────────────────────────────────────────────────────────────
+         KEYFRAMES
+         ───────────────────────────────────────────────────────────────── */
+
+      @keyframes loader-content-in {
+        0%   { opacity: 0; transform: translateY(16px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes orb-drift {
+        0%   { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(30px, 20px) scale(1.05); }
+      }
+
+      @keyframes ring-spin {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes icon-pulse {
+        0%, 100% {
+          box-shadow:
+            0 0 0 1px rgba(255,255,255,0.08),
+            0 0 40px rgba(59, 130, 246, 0.40),
+            0 0 80px rgba(139, 92, 246, 0.20);
+        }
+        50% {
+          box-shadow:
+            0 0 0 1px rgba(255,255,255,0.12),
+            0 0 60px rgba(59, 130, 246, 0.60),
+            0 0 120px rgba(139, 92, 246, 0.35);
+        }
+      }
+
+      @keyframes agent-step-in {
+        0%   { opacity: 0; transform: translateY(8px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes dot-active-pulse {
+        0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.30); }
+        50%      { box-shadow: 0 0 20px rgba(59, 130, 246, 0.60); }
+      }
+
+      @keyframes connector-flow {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+
+      @keyframes bar-shimmer {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+
+      @keyframes bar-indeterminate {
+        0%   { transform: translateX(-120%); }
+        100% { transform: translateX(400%); }
+      }
+
+      @keyframes version-dot-pulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.4; }
       }
 
       /* ── No Script ────────────────────────────────────────────────────── */
       .noscript-banner {
-        position: fixed;
-        inset: 0;
-        background: var(--color-bg);
-        display: flex;
-        align-items: center;
+        position:        fixed;
+        inset:           0;
+        background:      var(--color-bg);
+        display:         flex;
+        align-items:     center;
         justify-content: center;
-        flex-direction: column;
-        gap: 16px;
-        z-index: 99999;
-        padding: 24px;
-        text-align: center;
+        flex-direction:  column;
+        gap:             16px;
+        z-index:         99999;
+        padding:         24px;
+        text-align:      center;
       }
 
       .noscript-banner h1 {
-        font-size: 1.5rem;
+        font-size:   1.5rem;
         font-weight: 700;
-        color: var(--color-error);
+        color:       var(--color-error);
       }
 
       .noscript-banner p {
-        color: var(--color-text-muted);
-        max-width: 400px;
+        color:       var(--color-text-muted);
+        max-width:   400px;
         line-height: 1.6;
+        font-size:   0.9375rem;
       }
 
-      /* ── Keyframes ────────────────────────────────────────────────────── */
-      @keyframes loading-pulse {
-        0%, 100% {
-          box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
-          transform: scale(1);
-        }
-        50% {
-          box-shadow: 0 0 28px rgba(59, 130, 246, 0.8);
-          transform: scale(1.05);
-        }
-      }
-
-      @keyframes loading-bar {
-        0%   { transform: translateX(-100%); }
-        50%  { transform: translateX(0%); }
-        100% { transform: translateX(100%); }
-      }
-
-      /* ── Utility: Visually Hidden ─────────────────────────────────────── */
+      /* ── Accessibility ────────────────────────────────────────────────── */
       .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
+        position:   absolute;
+        width:      1px;
+        height:     1px;
+        padding:    0;
+        margin:     -1px;
+        overflow:   hidden;
+        clip:       rect(0, 0, 0, 0);
+        white-space:nowrap;
+        border-width:0;
       }
 
       /* ── Reduced Motion ───────────────────────────────────────────────── */
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
-          animation-duration: 0.01ms !important;
+          animation-duration:        0.01ms !important;
           animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
+          transition-duration:       0.01ms !important;
         }
-        html {
-          scroll-behavior: auto;
-        }
+        html { scroll-behavior: auto; }
       }
     </style>
   </head>
@@ -318,38 +666,143 @@
       </div>
     </noscript>
 
-    <!-- ── Loading Screen ─────────────────────────────────────────────────── -->
+    <!-- ══════════════════════════════════════════════════════════════════════
+         LOADING SCREEN
+         ══════════════════════════════════════════════════════════════════════ -->
     <div id="app-loading" role="status" aria-label="Loading AI Recruiter Pipeline">
-      <div class="loading-logo">
-        <div class="loading-logo-icon" aria-hidden="true">
-          <!-- Briefcase icon -->
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-          </svg>
+
+      <!-- Ambient orbs -->
+      <div class="loader-orb loader-orb-1" aria-hidden="true"></div>
+      <div class="loader-orb loader-orb-2" aria-hidden="true"></div>
+      <div class="loader-orb loader-orb-3" aria-hidden="true"></div>
+
+      <!-- Grid dots -->
+      <div class="loader-grid" aria-hidden="true"></div>
+
+      <!-- Main content -->
+      <div class="loader-content">
+
+        <!-- Logo -->
+        <div class="loading-logo">
+          <div class="loading-icon-wrapper" aria-hidden="true">
+            <div class="loading-icon-ring-2"></div>
+            <div class="loading-icon-ring"></div>
+            <div class="loading-logo-icon">
+              <!-- Custom AI circuit / briefcase hybrid icon -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                <line x1="12" y1="12" x2="12" y2="16"/>
+                <line x1="10" y1="14" x2="14" y2="14"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="loading-logo-text">
+            <span class="loading-logo-name">AI Recruiter</span>
+            <span class="loading-logo-tagline">Multi-Agent Pipeline</span>
+          </div>
         </div>
-        <div class="loading-logo-text">
-          <span class="loading-logo-name">AI Recruiter</span>
-          <span class="loading-logo-sub">PIPELINE v1.0</span>
+
+        <!-- Agent pipeline steps -->
+        <div class="loading-agents" aria-hidden="true">
+
+          <div class="agent-step active" id="step-scrape">
+            <div class="agent-dot">
+              <div class="agent-dot-inner">
+                <!-- Search icon -->
+                <svg viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+            </div>
+            <span class="agent-label">Scrape</span>
+          </div>
+
+          <div class="agent-connector"></div>
+
+          <div class="agent-step" id="step-match">
+            <div class="agent-dot">
+              <div class="agent-dot-inner">
+                <!-- Link / match icon -->
+                <svg viewBox="0 0 24 24">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+            </div>
+            <span class="agent-label">Match</span>
+          </div>
+
+          <div class="agent-connector"></div>
+
+          <div class="agent-step" id="step-score">
+            <div class="agent-dot">
+              <div class="agent-dot-inner">
+                <!-- Bar chart icon -->
+                <svg viewBox="0 0 24 24">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6"  y1="20" x2="6"  y2="14"/>
+                </svg>
+              </div>
+            </div>
+            <span class="agent-label">Score</span>
+          </div>
+
+          <div class="agent-connector"></div>
+
+          <div class="agent-step" id="step-draft">
+            <div class="agent-dot">
+              <div class="agent-dot-inner">
+                <!-- Edit / draft icon -->
+                <svg viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </div>
+            </div>
+            <span class="agent-label">Draft</span>
+          </div>
+
         </div>
+
+        <!-- Progress -->
+        <div class="loading-progress">
+          <div
+            class="loading-bar-container"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            id="loading-progressbar"
+          >
+            <div class="loading-bar-indeterminate" id="loading-bar"></div>
+          </div>
+          <span class="loading-status" id="loading-status-text" aria-live="polite">
+            Initializing...
+          </span>
+        </div>
+
       </div>
 
-      <div class="loading-bar-container" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-        <div class="loading-bar"></div>
+      <!-- Version watermark -->
+      <div class="loading-version" aria-hidden="true">
+        <div class="loading-version-dot"></div>
+        <span>v1.0.0 &nbsp;·&nbsp; LOCAL &nbsp;·&nbsp; OLLAMA</span>
       </div>
 
-      <span class="loading-status" id="loading-status-text">
-        Initializing...
-      </span>
     </div>
 
     <!-- ── React Root ──────────────────────────────────────────────────────── -->
     <div id="root"></div>
 
-    <!-- ── Inline Boot Script ─────────────────────────────────────────────── -->
+    <!-- ── Boot Script ────────────────────────────────────────────────────── -->
     <script>
       (function () {
-        // ── Theme persistence ──────────────────────────────────────────────
+
+        // ── Theme persistence ────────────────────────────────────────────
         try {
           const saved = localStorage.getItem("theme");
           if (saved === "light") {
@@ -359,40 +812,76 @@
           }
         } catch (e) {}
 
-        // ── Loading screen messages ────────────────────────────────────────
+        // ── Agent step sequencer ─────────────────────────────────────────
+        const steps = ["step-scrape", "step-match", "step-score", "step-draft"];
         const messages = [
           "Initializing agents...",
           "Connecting to Ollama...",
           "Loading pipeline...",
+          "Preparing dashboard...",
           "Almost ready...",
         ];
-        let idx = 0;
-        const el = document.getElementById("loading-status-text");
-        const interval = setInterval(function () {
-          idx = (idx + 1) % messages.length;
-          if (el) el.textContent = messages[idx];
-        }, 600);
 
-        // ── Hide loading screen when React mounts ──────────────────────────
-        window.__hideLoader = function () {
-          clearInterval(interval);
-          const loader = document.getElementById("app-loading");
-          if (loader) {
-            loader.classList.add("hidden");
+        let stepIdx   = 0;
+        let msgIdx    = 0;
+        const statusEl = document.getElementById("loading-status-text");
+
+        // Cycle active step highlight
+        const stepInterval = setInterval(function () {
+          // Remove active from current
+          const currentStep = document.getElementById(steps[stepIdx]);
+          if (currentStep) currentStep.classList.remove("active");
+
+          stepIdx = (stepIdx + 1) % steps.length;
+
+          // Add active to next
+          const nextStep = document.getElementById(steps[stepIdx]);
+          if (nextStep) nextStep.classList.add("active");
+
+          // Advance message
+          msgIdx = (msgIdx + 1) % messages.length;
+          if (statusEl) {
+            statusEl.style.opacity = "0";
             setTimeout(function () {
-              loader.remove();
-            }, 500);
+              statusEl.textContent   = messages[msgIdx];
+              statusEl.style.opacity = "1";
+            }, 150);
           }
+        }, 700);
+
+        // ── Hide loader when React mounts ────────────────────────────────
+        window.__hideLoader = function () {
+          clearInterval(stepInterval);
+
+          // Complete all steps visually
+          steps.forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("active");
+          });
+
+          // Final message
+          if (statusEl) {
+            statusEl.textContent = "Ready.";
+          }
+
+          setTimeout(function () {
+            const loader = document.getElementById("app-loading");
+            if (loader) {
+              loader.classList.add("hidden");
+              setTimeout(function () { loader.remove(); }, 600);
+            }
+          }, 200);
         };
 
-        // ── Fallback: force hide after 8s ──────────────────────────────────
+        // ── Fallback: force hide after 10s ───────────────────────────────
         setTimeout(function () {
           if (window.__hideLoader) window.__hideLoader();
-        }, 8000);
+        }, 10000);
+
       })();
     </script>
 
-    <!-- ── App Entry Point ────────────────────────────────────────────────── -->
+    <!-- ── App Entry ──────────────────────────────────────────────────────── -->
     <script type="module" src="/src/main.jsx"></script>
 
   </body>
