@@ -76,6 +76,24 @@ class PipelineOrchestrator:
         self._is_running:    bool = False
         self._start_time:    float = 0.0
         self._stage_times:   dict[str, float] = {}
+        self._last_result:   Optional[PipelineResult] = None
+
+    # ── Public Properties ──────────────────────────────────────────────────────
+
+    @property
+    def is_running(self) -> bool:
+        """Returns True if the pipeline is currently executing."""
+        return self._is_running
+
+    @property
+    def current_stage(self) -> str:
+        """Returns the name of the currently executing stage."""
+        return self._current_stage
+
+    @property
+    def has_run(self) -> bool:
+        """Returns True if the pipeline has completed at least one run."""
+        return bool(self._stage_times)
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -214,11 +232,13 @@ class PipelineOrchestrator:
                 jobs_processed=0,
                 total_jobs=0,
             ))
-            return PipelineResult(
+            result = PipelineResult(
                 total_jobs_scraped=0,
                 total_jobs_matched=0,
                 results=[],
             )
+            self._last_result = result
+            return result
 
         # ── Stage 2: Matching ──────────────────────────────────────────────────
         matches = await self._stage_matching(
@@ -236,11 +256,13 @@ class PipelineOrchestrator:
                 jobs_processed=len(jobs),
                 total_jobs=len(jobs),
             ))
-            return PipelineResult(
+            result = PipelineResult(
                 total_jobs_scraped=len(jobs),
                 total_jobs_matched=0,
                 results=[],
             )
+            self._last_result = result
+            return result
 
         # ── Stage 3: Scoring ───────────────────────────────────────────────────
         scored_matches = await self._stage_scoring(
@@ -262,6 +284,7 @@ class PipelineOrchestrator:
 
         # ── Stage 5: Assemble Result ───────────────────────────────────────────
         result = self._assemble_result(jobs, scored_matches, cover_letters)
+        self._last_result = result
 
         elapsed = round(time.time() - self._start_time, 1)
         logger.info(
@@ -627,6 +650,10 @@ class PipelineOrchestrator:
             "stages": self._stage_times,
             "total_seconds": round(total, 1),
         }
+
+    def get_last_result(self) -> Optional[PipelineResult]:
+        """Returns the PipelineResult from the last completed run, or None."""
+        return self._last_result
 
 
 # ── Singleton ──────────────────────────────────────────────────────────────────
