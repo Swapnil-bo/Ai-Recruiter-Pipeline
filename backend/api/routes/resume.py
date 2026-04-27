@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
@@ -118,6 +119,13 @@ async def upload_resume(file: UploadFile = File(...)):
                 f"Unsupported file type: '{ext}'. "
                 f"Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
             ),
+        )
+
+    # ── MIME type warning — don't hard reject, extension check is more reliable
+    if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
+        logger.warning(
+            f"[resume] Unexpected MIME type: {file.content_type} "
+            f"for file {file.filename} — proceeding with extension check"
         )
 
     # ── Read and validate size ─────────────────────────────────────────────────
@@ -260,5 +268,4 @@ async def get_upload_history():
 
 def _get_extension(filename: str) -> str:
     """Extract lowercase file extension including the dot."""
-    from pathlib import Path
     return Path(filename).suffix.lower()
