@@ -782,7 +782,7 @@ export default {
           },
         },
 
-        // Stat card
+        // Stat card.
         ".stat-card": {
           display:        "flex",
           flexDirection:  "column",
