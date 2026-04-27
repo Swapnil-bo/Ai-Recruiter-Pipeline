@@ -168,7 +168,6 @@ class CoverLetterAgent:
             return []
 
         # Build score lookup
-        score_map: dict[str, float] = {m.job_id: m.fit_score for m in matches}
         job_map: dict[str, Job] = {job.id: job for job in jobs}
 
         # Only process qualifying jobs, sorted best first
@@ -367,6 +366,8 @@ class CoverLetterAgent:
         Template-based fallback when LLM generation fails entirely.
         Better than returning nothing — user can edit the template.
         """
+        # Fallback intentionally uses simple template language.
+        # Quality checks are skipped — user is expected to edit this output.
         skills_str = ", ".join(resume.skills[:5]) if resume.skills else "relevant skills"
         exp_str = f"{resume.experience_years} years of" if resume.experience_years else "professional"
         title_str = resume.current_title or "software developer"
