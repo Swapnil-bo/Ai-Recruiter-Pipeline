@@ -1,3 +1,4 @@
+import re
 import logging
 import asyncio
 from typing import Optional, Callable
@@ -33,14 +34,11 @@ class ScorerAgent:
     - Graceful fallback to statistical normalization on LLM failure
     """
 
-    # Score thresholds for opportunity flagging
     STRONG_MATCH_THRESHOLD  = 7.5
     WEAK_MATCH_THRESHOLD    = 4.0
     MAX_CONCURRENCY         = 1
-
-    # Experience mismatch penalty config
-    EXP_PENALTY_PER_YEAR    = 0.3       # deduct per year of gap
-    MAX_EXP_PENALTY         = 2.0       # cap total penalty
+    EXP_PENALTY_PER_YEAR    = 0.3
+    MAX_EXP_PENALTY         = 2.0
 
     def __init__(self, ollama_client: Optional[OllamaClient] = None):
         self._ollama = ollama_client or OllamaClient()
@@ -59,17 +57,14 @@ class ScorerAgent:
         Applies LLM review + statistical adjustments.
         Always returns a MatchResult — never raises.
         """
-        # Step 1: Statistical pre-adjustment
         adjusted = self._statistical_adjust(resume, job, match)
 
-        # Step 2: LLM validation — only for borderline scores
         if self._needs_llm_review(adjusted):
             async with self._semaphore:
                 llm_result = await self._llm_score(resume, job, adjusted)
                 if llm_result:
                     adjusted = llm_result
 
-        # Step 3: Post-process — flag, clamp, normalize breakdown
         final = self._post_process(resume, job, adjusted)
 
         logger.info(
@@ -95,7 +90,6 @@ class ScorerAgent:
         if not matches:
             return []
 
-        # Build job lookup for O(1) access
         job_map: dict[str, Job] = {job.id: job for job in jobs}
 
         logger.info(f"[scorer] Scoring {len(matches)} match results")
@@ -128,9 +122,10 @@ class ScorerAgent:
         await asyncio.gather(*[process(m) for m in matches])
 
         results.sort(key=lambda r: r.fit_score, reverse=True)
+
+        avg = sum(r.fit_score for r in results) / len(results) if results else 0.0
         logger.info(
-            f"[scorer] Done. Avg score: "
-            f"{sum(r.fit_score for r in results) / len(results):.1f} | "
+            f"[scorer] Done. Avg score: {avg:.1f} | "
             f"Strong matches (≥{self.STRONG_MATCH_THRESHOLD}): "
             f"{sum(1 for r in results if r.fit_score >= self.STRONG_MATCH_THRESHOLD)}"
         )
@@ -171,9 +166,7 @@ class ScorerAgent:
 
         # ── 2. Title alignment bonus ───────────────────────────────────────────
         if resume.current_title and job.title:
-            title_bonus = self._title_alignment_bonus(
-                resume.current_title, job.title
-            )
+            title_bonus = self._title_alignment_bonus(resume.current_title, job.title)
             if title_bonus > 0:
                 score = min(10.0, score + title_bonus)
                 breakdown["role_alignment"] = min(
@@ -182,12 +175,10 @@ class ScorerAgent:
                 logger.debug(f"[scorer] Title bonus: +{title_bonus:.1f}")
 
         # ── 3. Breakdown consistency ───────────────────────────────────────────
-        # If breakdown avg deviates too far from fit_score, re-center it
         if breakdown:
             breakdown_avg = sum(breakdown.values()) / len(breakdown)
             deviation = abs(breakdown_avg - score)
             if deviation > 2.0:
-                # Nudge breakdown toward fit_score
                 factor = score / breakdown_avg if breakdown_avg > 0 else 1.0
                 breakdown = {k: min(10.0, max(0.0, v * factor)) for k, v in breakdown.items()}
 
@@ -205,14 +196,8 @@ class ScorerAgent:
     # ── LLM Review ─────────────────────────────────────────────────────────────
 
     def _needs_llm_review(self, match: MatchResult) -> bool:
-        """
-        Only send borderline scores to LLM review.
-        Very high or very low scores don't need validation.
-        Saves inference time on clear cases.
-        """
-        score = match.fit_score
-        # Review if score is in the uncertain middle band
-        return 3.5 <= score <= 8.0
+        """Only send borderline scores to LLM review. Saves inference time."""
+        return 3.5 <= match.fit_score <= 8.0
 
     async def _llm_score(
         self,
@@ -228,7 +213,7 @@ class ScorerAgent:
             raw = await self._ollama.chat_json(
                 prompt=scorer_user_prompt(resume, job, match.model_dump()),
                 system=scorer_system_prompt(),
-                temperature=0.1,         # near-deterministic for scoring
+                temperature=0.1,
             )
             return self._parse_score_result(raw, match)
 
@@ -243,7 +228,7 @@ class ScorerAgent:
     def _parse_score_result(self, raw: dict, original: MatchResult) -> MatchResult:
         """
         Parse LLM scoring response.
-        Protects against wild score swings — max ±2.0 change allowed from original.
+        Protects against wild score swings — max ±2.0 change allowed.
         """
         def clamp(val, lo=0.0, hi=10.0) -> float:
             try:
@@ -253,7 +238,6 @@ class ScorerAgent:
 
         raw_score = clamp(raw.get("fit_score", original.fit_score))
 
-        # Limit LLM from making wild adjustments
         max_delta = 2.0
         delta = raw_score - original.fit_score
         if abs(delta) > max_delta:
@@ -306,19 +290,17 @@ class ScorerAgent:
         """
         score = round(max(0.0, min(10.0, match.fit_score)), 1)
 
-        # Opportunity flag appended to reasoning
         reasoning = match.reasoning
         if score >= self.STRONG_MATCH_THRESHOLD:
-            flag = f" [STRONG MATCH — apply soon]"
+            flag = " [STRONG MATCH — apply soon]"
         elif score < self.WEAK_MATCH_THRESHOLD:
-            flag = f" [WEAK MATCH — consider skipping]"
+            flag = " [WEAK MATCH — consider skipping]"
         else:
             flag = ""
 
         if flag and flag not in reasoning:
             reasoning = (reasoning + flag)[:500]
 
-        # Final clamp on breakdown
         breakdown = {
             k: round(max(0.0, min(10.0, v)), 1)
             for k, v in match.score_breakdown.items()
@@ -337,7 +319,6 @@ class ScorerAgent:
 
     def _extract_required_experience(self, description: str) -> Optional[float]:
         """Extract required years of experience from job description."""
-        import re
         patterns = [
             r"(\d+)\+?\s*years?\s+of\s+experience",
             r"(\d+)\+?\s*years?\s+experience",
@@ -361,7 +342,6 @@ class ScorerAgent:
         candidate_words = set(candidate_title.lower().split())
         job_words = set(job_title.lower().split())
 
-        # Remove common stop words
         stop = {"the", "a", "an", "and", "or", "of", "in", "at", "for", "to"}
         candidate_words -= stop
         job_words -= stop
