@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, HTTPException, Query, Depends
+import asyncio
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +9,6 @@ from backend.utils.cache import job_cache
 from backend.scraper.remoteok_scraper import RemoteOKScraper
 from backend.scraper.hn_scraper import HNScraper
 from backend.scraper.adzuna_scraper import AdzunaScraper
-import asyncio
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -48,7 +48,6 @@ class CacheStatsResponse(BaseModel):
 )
 async def get_jobs(
     source: Optional[str] = Query(None, description="Filter by source: remoteok | hn | adzuna"),
-    min_score: Optional[float] = Query(None, ge=0.0, le=10.0, description="Minimum fit score filter"),
     search: Optional[str] = Query(None, description="Search in title, company, description"),
     limit: int = Query(50, ge=1, le=200, description="Max jobs to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
@@ -58,7 +57,7 @@ async def get_jobs(
 
     Filters:
     - source: remoteok | hn | adzuna
-    - search: full-text search across title, company, description
+    - search: full-text search across title, company, description, tags
     - limit/offset: pagination
     """
     jobs = await job_cache.get_all()
@@ -90,20 +89,64 @@ async def get_jobs(
     return paginated
 
 
+# ── Static routes MUST come before /{job_id} to avoid route conflicts ──────────
+
 @router.get(
-    "/{job_id}",
-    response_model=Job,
-    summary="Get a single job by ID",
+    "/cache/stats",
+    response_model=CacheStatsResponse,
+    summary="Get cache statistics",
 )
-async def get_job(job_id: str):
-    """Retrieve a single job from cache by its ID."""
-    job = await job_cache.get(job_id)
-    if not job:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Job '{job_id}' not found in cache. It may have expired.",
-        )
-    return job
+async def get_cache_stats():
+    """Returns current cache statistics."""
+    stats = await job_cache.stats()
+    return CacheStatsResponse(**stats)
+
+
+@router.delete(
+    "/cache",
+    summary="Clear job cache",
+    description="Clears all cached jobs from memory.",
+)
+async def clear_cache():
+    """Clear all jobs from the in-memory cache."""
+    stats_before = await job_cache.stats()
+    await job_cache.clear()
+    logger.info(f"[jobs] Cache cleared — removed {stats_before['active']} jobs")
+    return {
+        "message": "Cache cleared successfully",
+        "jobs_removed": stats_before["active"],
+    }
+
+
+@router.get(
+    "/sources/available",
+    summary="Get available job sources",
+)
+async def get_available_sources():
+    """Returns list of available job scraping sources."""
+    return {
+        "sources": [
+            {
+                "id": "remoteok",
+                "name": "RemoteOK",
+                "description": "Remote job listings via public JSON API",
+                "auth_required": False,
+            },
+            {
+                "id": "hn",
+                "name": "Hacker News Who's Hiring",
+                "description": "Monthly HN hiring thread via Algolia API",
+                "auth_required": False,
+            },
+            {
+                "id": "adzuna",
+                "name": "Adzuna",
+                "description": "Global job listings via REST API (free tier)",
+                "auth_required": True,
+                "env_vars": ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"],
+            },
+        ]
+    }
 
 
 @router.post(
@@ -206,62 +249,22 @@ async def scrape_jobs(request: ScrapeRequest):
     )
 
 
-@router.delete(
-    "/cache",
-    summary="Clear job cache",
-    description="Clears all cached jobs from memory.",
-)
-async def clear_cache():
-    """Clear all jobs from the in-memory cache."""
-    stats_before = await job_cache.stats()
-    await job_cache.clear()
-    logger.info(f"[jobs] Cache cleared — removed {stats_before['active']} jobs")
-    return {
-        "message": "Cache cleared successfully",
-        "jobs_removed": stats_before["active"],
-    }
-
+# ── Dynamic route MUST come after all static routes ────────────────────────────
 
 @router.get(
-    "/cache/stats",
-    response_model=CacheStatsResponse,
-    summary="Get cache statistics",
+    "/{job_id}",
+    response_model=Job,
+    summary="Get a single job by ID",
 )
-async def get_cache_stats():
-    """Returns current cache statistics."""
-    stats = await job_cache.stats()
-    return CacheStatsResponse(**stats)
-
-
-@router.get(
-    "/sources/available",
-    summary="Get available job sources",
-)
-async def get_available_sources():
-    """Returns list of available job scraping sources."""
-    return {
-        "sources": [
-            {
-                "id": "remoteok",
-                "name": "RemoteOK",
-                "description": "Remote job listings via public JSON API",
-                "auth_required": False,
-            },
-            {
-                "id": "hn",
-                "name": "Hacker News Who's Hiring",
-                "description": "Monthly HN hiring thread via Algolia API",
-                "auth_required": False,
-            },
-            {
-                "id": "adzuna",
-                "name": "Adzuna",
-                "description": "Global job listings via REST API (free tier)",
-                "auth_required": True,
-                "env_vars": ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"],
-            },
-        ]
-    }
+async def get_job(job_id: str):
+    """Retrieve a single job from cache by its ID."""
+    job = await job_cache.get(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Job '{job_id}' not found in cache. It may have expired.",
+        )
+    return job
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
