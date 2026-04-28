@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Error Boundary Styles ────────────────────────────────────────────────── */
+.error-boundary-screen {
+  @apply fixed inset-0 flex flex-col items-center justify-center bg-surface-950 overflow-hidden;
+}
+
+.error-boundary-orb {
+  @apply absolute rounded-full pointer-events-none;
+  filter: blur(80px);
+}
+
+.error-boundary-orb-1 {
+  @apply w-96 h-96 -top-20 -left-20;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.08), transparent 70%);
+}
+
+.error-boundary-orb-2 {
+  @apply w-80 h-80 -bottom-20 -right-20;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+}
+
+.error-boundary-card {
+  @apply relative z-10 w-full max-w-lg mx-4 bg-surface-900 border border-white/[0.06]
+         rounded-2xl p-8 flex flex-col items-center gap-6
+         shadow-[0_24px_80px_rgba(0,0,0,0.5)];
+}
+
+.error-boundary-icon {
+  @apply w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20
+         flex items-center justify-center text-red-400;
+}
+
+.error-boundary-icon svg {
+  @apply w-8 h-8;
+}
+
+.error-boundary-content {
+  @apply flex flex-col items-center gap-4 w-full text-center;
+}
+
+.error-boundary-title {
+  @apply text-xl font-bold text-surface-50;
+}
+
+.error-boundary-subtitle {
+  @apply text-sm text-surface-400 max-w-sm leading-relaxed;
+}
+
+.error-boundary-id {
+  @apply flex items-center gap-2 px-3 py-1.5 bg-surface-800 rounded-lg;
+}
+
+.error-boundary-id-label {
+  @apply text-xs text-surface-500 font-medium;
+}
+
+.error-boundary-id-value {
+  @apply text-xs text-surface-300 font-mono tracking-wide;
+}
+
+.error-boundary-details {
+  @apply w-full text-left bg-surface-800/50 rounded-xl p-4 space-y-2 border border-white/[0.04];
+}
+
+.error-boundary-message {
+  @apply text-sm text-red-400 font-mono;
+}
+
+.error-boundary-stack {
+  @apply text-xs text-surface-500 font-mono overflow-auto max-h-48 leading-relaxed;
+}
+
+.error-boundary-actions {
+  @apply flex gap-3;
+}
+
+.error-boundary-btn {
+  @apply px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer;
+}
+
+.error-boundary-btn-primary {
+  @apply bg-primary-600 hover:bg-primary-500 text-white shadow-lg;
+}
+
+.error-boundary-btn-secondary {
+  @apply bg-surface-800 hover:bg-surface-700 text-surface-300 border border-white/[0.06];
+}
+
+.error-boundary-version {
+  @apply absolute bottom-6 text-xs text-surface-600 font-mono;
+}
+
+/* ── Suspense Fallback ────────────────────────────────────────────────────── */
+.suspense-fallback {
+  @apply fixed inset-0 flex flex-col items-center justify-center gap-4 bg-surface-950;
+}
+
+.suspense-spinner {
+  @apply w-8 h-8 rounded-full border-2 border-surface-700 border-t-primary-500;
+  animation: spin 0.7s linear infinite;
+}
+
+.suspense-text {
+  @apply text-sm text-surface-500 font-mono tracking-wide;
+}
+
+/* ── Dev Overlay ─────────────────────────────────────────────────────────── */
+.dev-overlay {
+  @apply fixed bottom-4 left-4 z-[9998] pointer-events-none;
+}
+
+.dev-overlay-badge {
+  @apply text-xs font-mono px-2.5 py-1 rounded-lg
+         bg-accent-600/20 border border-accent-500/30 text-accent-300
+         tracking-wide;
+}
+
+/* ── Global Utilities ────────────────────────────────────────────────────── */
+@layer utilities {
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-cyan {
+    @apply bg-gradient-to-r from-cyan-400 to-primary-400 bg-clip-text text-transparent;
+  }
+
+  .bg-glass {
+    @apply bg-surface-900/60 backdrop-blur-md border border-white/[0.06];
+  }
+
+  .bg-glass-light {
+    @apply bg-surface-800/40 backdrop-blur-sm border border-white/[0.04];
+  }
+
+  .card-glow-blue {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15),
+                0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-glow-violet {
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15),
+                0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
