@@ -387,7 +387,7 @@ function Sidebar({
 
         {/* GitHub Link */}
         
-          href="https://github.com/Swapnil-bo/Ai-Recruiter-Pipeline"
+          <a href="https://github.com/Swapnil-bo/Ai-Recruiter-Pipeline"
           target="_blank"
           rel="noopener noreferrer"
           className={clsx(
@@ -432,7 +432,6 @@ function TopBar({
   onMobileMenuToggle,
 }) {
   const location = useLocation();
-  const navigate = useNavigate();
 
   const PAGE_TITLES = {
     "/":         { title: "Dashboard",       sub: "Ranked job opportunities" },
@@ -539,7 +538,7 @@ function MobileDrawer({ open, onClose }) {
 
   useEffect(() => {
     onClose();
-  }, [location.pathname]);
+  }, [location.pathname, onClose]);
 
   useEffect(() => {
     if (open) {
